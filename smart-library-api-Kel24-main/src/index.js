@@ -30,3 +30,5 @@ app.listen(PORT, () => {
 app.post('/loans', (req, res) => {
     // Logika peminjaman buku kamu di sini
 });
+
+export default app;
