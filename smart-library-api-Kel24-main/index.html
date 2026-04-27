@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Library API - Frontend</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; max-width: 800px; }
+        .card { border: 1px solid #ccc; padding: 15px; margin-bottom: 10px; border-radius: 5px; }
+        .form-group { margin-bottom: 10px; }
+        input { padding: 8px; width: 200px; margin-right: 10px; }
+        button { padding: 8px 15px; cursor: pointer; background-color: #007bff; color: white; border: none; border-radius: 3px; }
+        button:hover { background-color: #0056b3; }
+        
+        /* Alert Styles */
+        .alert { padding: 10px; margin-bottom: 15px; border-radius: 4px; display: none; }
+        .alert-success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .alert-error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+    </style>
+</head>
+<body>
+
+    <h1>📚 Smart Library - Peminjaman Buku</h1>
+
+    <div id="alertBox" class="alert"></div>
+
+    <hr>
+
+    <h3>Form Pinjam Buku</h3>
+    <form id="loanForm">
+        <div class="form-group">
+            <input type="text" id="bookId" placeholder="Masukkan ID Buku" required>
+            <input type="text" id="memberId" placeholder="Masukkan ID Member" required>
+            <button type="submit">Pinjam Buku</button>
+        </div>
+    </form>
+
+    <hr>
+
+    <h3>Daftar Buku Tersedia</h3>
+    <div id="bookList">
+        <p>Memuat data buku...</p>
+    </div>
+
+    <script>
+        const BASE_URL = 'http://localhost:3000'; 
+
+        function showAlert(message, isSuccess) {
+            const alertBox = document.getElementById('alertBox');
+            alertBox.style.display = 'block';
+            alertBox.innerText = message;
+            
+            if (isSuccess) {
+                alertBox.className = 'alert alert-success';
+            } else {
+                alertBox.className = 'alert alert-error';
+            }
+
+            setTimeout(() => { alertBox.style.display = 'none'; }, 3000);
+        }
+
+        async function fetchBooks() {
+            try {
+                const response = await fetch(`${BASE_URL}/books`); 
+                const books = await response.json();
+                
+                const bookListDiv = document.getElementById('bookList');
+                bookListDiv.innerHTML = ''; 
+
+                if(books.length === 0) {
+                    bookListDiv.innerHTML = '<p>Belum ada buku di perpustakaan.</p>';
+                    return;
+                }
+
+                books.forEach(book => {
+                    const card = `
+                        <div class="card">
+                            <strong>Judul:</strong> ${book.title} (ID: ${book.id})<br>
+                            <strong>Penulis:</strong> ${book.author} <br>
+                            <strong>Kategori:</strong> ${book.category} <br>
+                            <strong>Sisa Stok:</strong> ${book.stock}
+                        </div>
+                    `;
+                    bookListDiv.innerHTML += card;
+                });
+            } catch (error) {
+                document.getElementById('bookList').innerHTML = '<p style="color:red;">Gagal mengambil data buku. Pastikan server backend menyala.</p>';
+                console.error('Error fetching books:', error);
+            }
+        }
+
+        // Event listener sekarang mengarah ke loanForm
+        document.getElementById('loanForm').addEventListener('submit', async function(e) {
+            e.preventDefault(); 
+
+            const bookId = document.getElementById('bookId').value;
+            const memberId = document.getElementById('memberId').value;
+
+            try {
+                // ENDPOINT DIUBAH MENJADI /loans
+                const response = await fetch(`${BASE_URL}/loans`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ bookId: bookId, memberId: memberId })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    showAlert('Buku berhasil dipinjam!', true);
+                    document.getElementById('loanForm').reset(); 
+                    fetchBooks(); 
+                } else {
+                    showAlert(result.message || 'Gagal meminjam buku.', false);
+                }
+            } catch (error) {
+                showAlert('Terjadi kesalahan pada server atau koneksi terputus.', false);
+            }
+        });
+
+        fetchBooks();
+    </script>
+</body>
+</html>
